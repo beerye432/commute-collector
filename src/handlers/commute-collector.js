@@ -1,7 +1,7 @@
 const https = require('https');
 
 
-exports.commuteCollectorHandler = async () => {
+exports.commuteCollectorHandler = () => {
 
     const url = new URL('https://maps.googleapis.com/maps/api/distancematrix/json');
     url.searchParams.append('units', 'imperial');
@@ -20,7 +20,11 @@ exports.commuteCollectorHandler = async () => {
 
         // The whole response has been received. Print out the result.
         resp.on('end', () => {
-            console.log(JSON.parse(data));
+            console.log(JSON.parse(data).rows[0].elements[0].duration);
+        });
+
+        resp.on('error', (error) => {
+            console.log(`error: ${error.message}`);
         });
     });
 };
