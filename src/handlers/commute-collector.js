@@ -20,7 +20,7 @@ exports.commuteCollectorHandler = () => {
 
         // The whole response has been received. Print out the result.
         resp.on('end', () => {
-            console.log(JSON.parse(data).rows[0].elements[0].duration);
+            console.log(JSON.stringify(JSON.parse(data)));
         });
 
         resp.on('error', (error) => {
