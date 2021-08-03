@@ -39,42 +39,43 @@ exports.commuteCollectorHandler = async () => {
     // For now, we'll gather info on every (dwelling,workplace) pairing indiscriminantly
     // We may want more explicit inclusions/exclusions later
     console.info(`Processing ${dwellings.length * workPlaces.length} combinations total. ${dwellings.length} dwellings and ${workPlaces.length} workplaces`)
-    origins.forEach(async origin => {
+    const promises = new Array()
+    origins.forEach(origin => {
+        destinations.forEach(destination => {
+            promises.push(makeGoogleDistanceMatrixRequest(origin, destination))
+        })
+    })
 
-        destinations.forEach(async destination => {
+    Promise.all(promises).then(commuteData => {
+        console.info('Done with Google request, cleaning data...')
 
-            // Get commute data (distance, duration, duration_in_traffic) from Google
-            const commuteData = await makeGoogleDistanceMatrixRequest(origin, destination)
-
-            console.info('Done with Google request, cleaning data...')
-
+        return Promise.all(commuteData.map(cd => {
             // Google returns a horrible mess of arrays, pick out the first one, since we're only making one request.
             // Excluse 'status' from data that goes into dynamoDB
-            const { status, ...data } = commuteData['rows'][0]['elements'][0]
+            const { status, ...data } = cd['rows'][0]['elements'][0]
 
             // Construct our dynamoDB item, marshall it (convert it to dynamo DB record), then write it
-            console.info(`Writing ${origin['name']} -> ${destination['name']} to commute_data`)
+            console.info(`Writing ${cd['dbWriteKey']} to commute_data`)
             try {
                 const dynamoCommuteData = marshall({
-                    to_from: `${origin['coordinates']}->${destination['coordinates']}`,
+                    to_from: cd['dbWriteKey'],
                     data,
                     timestamp: laTime.toString()
                 })
 
-                await dynamodbClient.send(new PutItemCommand({
+                return dynamodbClient.send(new PutItemCommand({
                     TableName: 'commute_data',
                     Item: dynamoCommuteData
                 }))
             }
             catch (error) {
-                console.error(`Error writing commute results to DB: ${error}`)
+                reject(error)
             }
-        })
-    })
-    console.info('Done...')
+        }));
+    }).then(() => console.log('done writing!'));
 }
 
-const makeGoogleDistanceMatrixRequest = async (origin, destination) => {
+const makeGoogleDistanceMatrixRequest = (origin, destination) => {
     console.info(`Google request ${origin['name']} -> ${destination['name']}`)
     return new Promise((resolve, reject) => {
         const url = new URL('https://maps.googleapis.com/maps/api/distancematrix/json')
@@ -91,7 +92,17 @@ const makeGoogleDistanceMatrixRequest = async (origin, destination) => {
             resp.on('data', (chunk) => (data += chunk))
 
             // The whole response has been received. Print out the result.
-            resp.on('end', () => resolve(JSON.parse(data)))
+            resp.on('end', () => {
+                if (resp.statusCode != 200) {
+                    console.warn(`Google request didn't return 200: ${JSON.parse(JSON.stringify(data))}`)
+                    reject();
+                }
+                const ret = {
+                    ...JSON.parse(data),
+                    dbWriteKey: `${origin['coordinates']}->${destination['coordinates']}`
+                }
+                resolve(ret)
+            })
 
             resp.on('error', reject)
         })
