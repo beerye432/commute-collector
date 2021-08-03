@@ -55,6 +55,7 @@ exports.commuteCollectorHandler = async () => {
                 timestamp: laTime.toString()
             })
 
+            // Write commute data to commute_data dynamoDB table
             try {
                 await dynamodbClient.send(new PutItemCommand({
                     TableName: 'commute_data',
