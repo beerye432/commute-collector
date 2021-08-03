@@ -44,3 +44,4 @@ Resources:
       Policies:
         # Give Lambda basic execution Permission to the commuteCollector
         - AWSLambdaBasicExecutionRole
+        - dynamodb-tables
