@@ -46,9 +46,12 @@ exports.commuteCollectorHandler = async () => {
         })
     })
 
-    Promise.all(promises).then(commuteData => {
-        console.info('Done with Google request, cleaning data...')
+    // We now have a list of Google commute data + db write key
+    return Promise.all(promises).then(commuteData => {
 
+        console.info(`Done querying Google, moving to writes`)
+
+        // Another promise.all sequence for writing to dynamoDB
         return Promise.all(commuteData.map(cd => {
             // Google returns a horrible mess of arrays, pick out the first one, since we're only making one request.
             // Excluse 'status' from data that goes into dynamoDB
@@ -71,8 +74,8 @@ exports.commuteCollectorHandler = async () => {
             catch (error) {
                 reject(error)
             }
-        }));
-    }).then(() => console.log('done writing!'));
+        }))
+    })
 }
 
 const makeGoogleDistanceMatrixRequest = (origin, destination) => {
