@@ -42,5 +42,5 @@ Resources:
       Timeout: 60
       Description: A Lambda function that queries google maps distance matrix API and writes results to storage
       Policies:
-        # Give Lambda basic execution Permission to the helloFromLambda
+        # Give Lambda basic execution Permission to the commuteCollector
         - AWSLambdaBasicExecutionRole
