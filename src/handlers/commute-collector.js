@@ -7,7 +7,7 @@ exports.commuteCollectorHandler = async () => {
 
     const dynamodbClient = new DynamoDBClient({ region: 'us-east-2' })
 
-    // Scan our locations dynamoDB table, get all registered locations
+    // Scan our locations dynamoDB table, get all registered locations 
     console.info('Getting locations from dynamoDB')
     let results
     try {
