@@ -52,7 +52,7 @@ exports.commuteCollectorHandler = async () => {
             const dynamoCommuteData = marshall({
                 to_from: `${origin['coordinates']}->${destination['coordinates']}`,
                 data,
-                timestamp: laTime
+                timestamp: laTime.toString()
             })
 
             try {
