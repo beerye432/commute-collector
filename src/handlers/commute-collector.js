@@ -8,6 +8,7 @@ exports.commuteCollectorHandler = async () => {
     const dynamodbClient = new DynamoDBClient({ region: 'us-east-2' })
 
     // Scan our locations dynamoDB table, get all registered locations
+    console.info('Getting locations from dynamoDB')
     let results
     try {
         results = await dynamodbClient.send(new ScanCommand({
@@ -25,7 +26,7 @@ exports.commuteCollectorHandler = async () => {
     console.info(`isMorning: ${isMorning}`)
 
     // Convert dynamoDB record to json, split dwellings and workplaces
-    const locations = results["Items"].map(l => unmarshall(l))
+    const locations = results['Items'].map(l => unmarshall(l))
     const dwellings = locations.filter(l => !l['is_workplace'])
     const workPlaces = locations.filter(l => l['is_workplace'])
 
@@ -37,6 +38,7 @@ exports.commuteCollectorHandler = async () => {
 
     // For now, we'll gather info on every (dwelling,workplace) pairing indiscriminantly
     // We may want more explicit inclusions/exclusions later
+    console.info(`Processing ${dwellings.length * workPlaces.length} combinations total. ${dwellings.length} dwellings and ${workPlaces.length} workplaces`)
     origins.forEach(async origin => {
 
         destinations.forEach(async destination => {
@@ -46,17 +48,17 @@ exports.commuteCollectorHandler = async () => {
 
             // Google returns a horrible mess of arrays, pick out the first one, since we're only making one request.
             // Excluse 'status' from data that goes into dynamoDB
-            const { status, ...data } = commuteData["rows"][0]["elements"][0]
+            const { status, ...data } = commuteData['rows'][0]['elements'][0]
 
-            // Construct our dynamoDB item, and marshall it (convert it to dynamo DB record)
-            const dynamoCommuteData = marshall({
-                to_from: `${origin['coordinates']}->${destination['coordinates']}`,
-                data,
-                timestamp: laTime.toString()
-            })
-
-            // Write commute data to commute_data dynamoDB table
+            // Construct our dynamoDB item, marshall it (convert it to dynamo DB record), then write it
+            console.info(`Writing ${origin['name']} -> ${destination['name']} to commute_data`)
             try {
+                const dynamoCommuteData = marshall({
+                    to_from: `${origin['coordinates']}->${destination['coordinates']}`,
+                    data,
+                    timestamp: laTime.toString()
+                })
+
                 await dynamodbClient.send(new PutItemCommand({
                     TableName: 'commute_data',
                     Item: dynamoCommuteData
@@ -67,9 +69,11 @@ exports.commuteCollectorHandler = async () => {
             }
         })
     })
+    console.info('Done...')
 }
 
 const makeGoogleDistanceMatrixRequest = async (origin, destination) => {
+    console.info(`Google request ${origin['name']} -> ${destination['name']}`)
     return new Promise((resolve, reject) => {
         const url = new URL('https://maps.googleapis.com/maps/api/distancematrix/json')
         url.searchParams.append('units', 'imperial')
