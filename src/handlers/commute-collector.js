@@ -19,7 +19,8 @@ exports.commuteCollectorHandler = async () => {
     }
 
     // Is it currently morning or afternoon? Will influence directionality
-    const isMorning = moment().tz('America/Los_Angeles').hour() < 12
+    const laTime = moment().tz('America/Los_Angeles')
+    const isMorning = laTime.hour() < 12
 
     console.info(`isMorning: ${isMorning}`)
 
@@ -50,7 +51,8 @@ exports.commuteCollectorHandler = async () => {
             // Construct our dynamoDB item, and marshall it (convert it to dynamo DB record)
             const dynamoCommuteData = marshall({
                 to_from: `${origin['coordinates']}->${destination['coordinates']}`,
-                data
+                data,
+                timestamp: laTime
             })
 
             try {
