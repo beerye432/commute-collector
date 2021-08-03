@@ -46,6 +46,8 @@ exports.commuteCollectorHandler = async () => {
             // Get commute data (distance, duration, duration_in_traffic) from Google
             const commuteData = await makeGoogleDistanceMatrixRequest(origin, destination)
 
+            console.info('Done with Google request, cleaning data...')
+
             // Google returns a horrible mess of arrays, pick out the first one, since we're only making one request.
             // Excluse 'status' from data that goes into dynamoDB
             const { status, ...data } = commuteData['rows'][0]['elements'][0]
