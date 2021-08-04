@@ -2,6 +2,7 @@ const { DynamoDBClient, ScanCommand, PutItemCommand } = require('@aws-sdk/client
 const { marshall, unmarshall } = require('@aws-sdk/util-dynamodb')
 const https = require('https')
 const moment = require('moment-timezone')
+const { v4: uuidv4 } = require('uuid');
 
 exports.commuteCollectorHandler = async () => {
 
@@ -102,7 +103,7 @@ const makeGoogleDistanceMatrixRequest = (origin, destination) => {
                 }
                 const ret = {
                     ...JSON.parse(data),
-                    dbWriteKey: `${origin['coordinates']}->${destination['coordinates']}`
+                    dbWriteKey: `${origin['coordinates']}->${destination['coordinates']}_${uuidv4()}`
                 }
                 resolve(ret)
             })
