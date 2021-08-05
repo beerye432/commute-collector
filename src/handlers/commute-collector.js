@@ -59,11 +59,12 @@ exports.commuteCollectorHandler = async () => {
             const { status, ...data } = cd['rows'][0]['elements'][0]
 
             // Construct our dynamoDB item, marshall it (convert it to dynamo DB record), then write it
-            console.info(`Writing ${cd['dbWriteKey']} to commute_data`)
+            console.info(`Writing ${cd['toFrom']} to commute_data`)
             try {
                 const dynamoCommuteData = marshall({
-                    to_from: cd['dbWriteKey'],
+                    to_from: cd['toFrom'],
                     to_from_readable: cd['humanReadableToFrom'],
+                    uuid: uuidv4(),
                     data,
                     timestamp: laTime.toString()
                 })
@@ -104,7 +105,7 @@ const makeGoogleDistanceMatrixRequest = (origin, destination) => {
                 }
                 const ret = {
                     ...JSON.parse(data),
-                    dbWriteKey: `${origin['coordinates']}->${destination['coordinates']}_${uuidv4()}`,
+                    toFrom: `${origin['coordinates']}->${destination['coordinates']}`,
                     humanReadableToFrom: `${origin['name']} -> ${destination['name']}`
                 }
                 resolve(ret)
